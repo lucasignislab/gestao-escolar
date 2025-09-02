@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 /**
  * Busca o perfil do usuário autenticado
  * Combina autenticação do Supabase com dados do perfil no Prisma
+ * Cria automaticamente um perfil se o usuário estiver autenticado mas não tiver perfil
  * @returns Profile do usuário ou null se não autenticado
  */
 export const getUserProfile = async () => {
@@ -30,9 +31,22 @@ export const getUserProfile = async () => {
       return null;
     }
 
-    const profile = await prisma.profile.findUnique({
+    let profile = await prisma.profile.findUnique({
       where: { id: user.id },
     });
+
+    // Se o usuário está autenticado mas não tem perfil, criar um perfil padrão
+    if (!profile && user) {
+      console.log('Usuário autenticado sem perfil, criando perfil padrão:', user.id);
+      profile = await prisma.profile.create({
+        data: {
+          id: user.id,
+          username: user.email?.split('@')[0] || `user_${user.id.slice(0, 8)}`,
+          role: 'ADMIN', // Perfil padrão como ADMIN para facilitar o acesso inicial
+        },
+      });
+      console.log('Perfil criado:', profile);
+    }
 
     return profile;
   } catch (error) {
