@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // Descomente se usar Prisma Migrate em ambientes sem acesso direto ao DB
+}
+
+// Enum para definir os papéis de usuário permitidos
+enum Role {
+  ADMIN
+  PROFESSOR
+  ALUNO
+  RESPONSAVEL // Pai ou Mãe
+}
+
+// Tabela para guardar dados públicos dos usuários
+model Profile {
+  id        String  @id @default(uuid()) // Usa o mesmo ID da tabela de auth do Supabase
+  username  String? @unique
+  role      Role    @default(ALUNO)
+  avatarUrl String?
+
+  // Relação inversa para fácil acesso a partir de outras tabelas
+  teacher   Teacher?
+  student   Student?
+  parent    Parent?
+}
+
+// Modelo para Professor
+model Teacher {
+  id          String    @id @default(cuid())
+  profileId   String    @unique
+  profile     Profile   @relation(fields: [profileId], references: [id])
+  name        String
+  surname     String
+  email       String    @unique
+  phone       String?
+  // ... outros campos como endereço, tipo sanguíneo, etc.
+  lessons     Lesson[]
+  subjects    Subject[] @relation("TeacherSubjects")
+  supervisedClasses Class[]
+}
+
+// Modelo para Aluno
+model Student {
+  id          String    @id @default(cuid())
+  profileId   String    @unique
+  profile     Profile   @relation(fields: [profileId], references: [id])
+  name        String
+  surname     String
+  // ... outros campos
+  parentId    String
+  parent      Parent    @relation(fields: [parentId], references: [id])
+  gradeId     String
+  grade       Grade     @relation(fields: [gradeId], references: [id])
+  classId     String
+  class       Class     @relation(fields: [classId], references: [id])
+  results     Result[]
+  attendances Attendance[]
+}
+
+// Modelo para Responsável (Pai/Mãe)
+model Parent {
+  id        String    @id @default(cuid())
+  profileId String    @unique
+  profile   Profile   @relation(fields: [profileId], references: [id])
+  name      String
+  surname   String
+  email     String    @unique
+  children  Student[]
+}
+
+// Modelo para Ano Escolar (ex: 1º Ano, 2º Ano)
+model Grade {
+  id        String    @id @default(cuid())
+  level     Int       @unique // Nível 1, 2, 3...
+  students  Student[]
+  classes   Class[]
+}
+
+// Modelo para Turma (ex: 1º Ano A)
+model Class {
+  id          String    @id @default(cuid())
+  name        String    @unique // Ex: "1A", "2B"
+  capacity    Int
+  gradeId     String
+  grade       Grade     @relation(fields: [gradeId], references: [id])
+  supervisorId String?
+  supervisor  Teacher?  @relation(fields: [supervisorId], references: [id])
+  students    Student[]
+  lessons     Lesson[]
+  events      Event[]
+  announcements Announcement[]
+}
+
+// Modelo para Matéria
+model Subject {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  teachers  Teacher[] @relation("TeacherSubjects")
+  lessons   Lesson[]
+}
+
+// Modelo para Aula
+model Lesson {
+  id        String    @id @default(cuid())
+  dayOfWeek Int       // 1 para Segunda, 2 para Terça, etc.
+  startTime DateTime
+  endTime   DateTime
+  classId   String
+  class     Class     @relation(fields: [classId], references: [id])
+  subjectId String
+  subject   Subject   @relation(fields: [subjectId], references: [id])
+  teacherId String
+  teacher   Teacher   @relation(fields: [teacherId], references: [id])
+  exams     Exam[]
+  assignments Assignment[]
+  attendances Attendance[]
+}
+
+// Modelo para Prova/Exame
+model Exam {
+  id        String    @id @default(cuid())
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  lessonId  String
+  lesson    Lesson    @relation(fields: [lessonId], references: [id])
+  results   Result[]
+}
+
+// Modelo para Tarefa/Atividade
+model Assignment {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id])
+  results     Result[]
+}
+
+// Modelo para Resultado (Notas)
+model Result {
+  id           String     @id @default(cuid())
+  score        Float
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id])
+  examId       String?
+  exam         Exam?      @relation(fields: [examId], references: [id])
+  assignmentId String?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+// Modelo para Presença
+model Attendance {
+  id        String    @id @default(cuid())
+  date      DateTime
+  present   Boolean   @default(false)
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id])
+  lessonId  String
+  lesson    Lesson    @relation(fields: [lessonId], references: [id])
+}
+
+// Modelo para Evento
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+  classId     String?
+  class       Class?    @relation(fields: [classId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+// Modelo para Anúncio
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  classId     String?
+  class       Class?    @relation(fields: [classId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
