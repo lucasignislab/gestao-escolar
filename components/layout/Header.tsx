@@ -15,8 +15,12 @@ export default async function Header() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Em server components, não podemos definir cookies diretamente
+          // Esta função é necessária para a interface, mas não será usada
         },
       },
     }

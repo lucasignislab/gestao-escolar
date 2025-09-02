@@ -19,17 +19,30 @@ export const getUserProfile = async () => {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            // Em server components, não podemos definir cookies diretamente
+            // Esta função é necessária para a interface, mas não será usada
           },
         },
       }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('❌ [getUserProfile] Erro ao obter usuário:', error.message);
       return null;
     }
+    
+    if (!user) {
+      console.log('❌ [getUserProfile] Nenhum usuário autenticado encontrado');
+      return null;
+    }
+    
+    console.log('✅ [getUserProfile] Usuário autenticado:', user.email);
 
     let profile = await prisma.profile.findUnique({
       where: { id: user.id },
@@ -37,7 +50,6 @@ export const getUserProfile = async () => {
 
     // Se o usuário está autenticado mas não tem perfil, criar um perfil padrão
     if (!profile && user) {
-      console.log('Usuário autenticado sem perfil, criando perfil padrão:', user.id);
       profile = await prisma.profile.create({
         data: {
           id: user.id,
@@ -45,12 +57,12 @@ export const getUserProfile = async () => {
           role: 'ADMIN', // Perfil padrão como ADMIN para facilitar o acesso inicial
         },
       });
-      console.log('Perfil criado:', profile);
     }
 
     return profile;
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    console.error('❌ [getUserProfile] Erro ao obter perfil do usuário:', error);
+    console.error('❌ [getUserProfile] Stack trace:', error instanceof Error ? error.stack : 'N/A');
     return null;
   }
 };
