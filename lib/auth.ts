@@ -22,9 +22,8 @@ export const getUserProfile = async () => {
           getAll() {
             return cookieStore.getAll();
           },
-          setAll(cookiesToSet) {
-            // Em server components, não podemos definir cookies diretamente
-            // Esta função é necessária para a interface, mas não será usada
+          setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+            // No Server Components não é possível definir cookies; noop
           },
         },
       }
