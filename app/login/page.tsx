@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 /**
  * Página de login do sistema de gestão escolar
@@ -68,6 +69,12 @@ export default function LoginPage() {
             </Button>
           </CardContent>
         </form>
+        <div className="mt-4 text-center text-sm">
+          Não tem uma conta?{' '}
+          <Link href="/register" className="underline">
+            Criar conta
+          </Link>
+        </div>
       </Card>
     </main>
   );
