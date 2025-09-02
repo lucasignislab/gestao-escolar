@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Teacher } from '@prisma/client';
 import { deleteProfessor } from './actions';
+// Removendo import da server action
 import { createColumns } from './columns';
 import { DataTable } from '@/components/DataTable';
 import PaginationControls from '@/components/PaginationControls';
@@ -53,14 +54,21 @@ function ProfessoresPageContent() {
   const buscarProfessores = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: paginaAtual.toString(),
-        search: termoBusca,
-      });
-      
-      const response = await fetch(`/api/professores?${params}`);
+      const response = await fetch(
+        `/api/professores?page=${paginaAtual}&search=${encodeURIComponent(termoBusca)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erro ao buscar professores');
+      }
+
       const data = await response.json();
-      
       setProfessores(data.professores);
       setTotalProfessores(data.total);
     } catch (error) {

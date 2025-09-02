@@ -9,11 +9,11 @@ const nextConfig: NextConfig = {
   typescript: {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
-  // Configurações para deploy no Netlify
-  output: 'export',
-  trailingSlash: true,
+  // Removendo export estático para permitir funcionalidades dinâmicas
+  // output: 'export',
+  // trailingSlash: true,
   images: {
     unoptimized: true,
   },

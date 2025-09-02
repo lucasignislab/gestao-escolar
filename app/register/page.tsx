@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import Link from 'next/link';
+// Removendo import da server action
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -52,30 +53,32 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      const data = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      };
+      
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role
-        }),
+        body: JSON.stringify(data),
       });
-
-      const data = await response.json();
-
+      
+      const result = await response.json();
+      
       if (response.ok) {
         toast.success('Usuário criado com sucesso!');
         router.push('/login');
       } else {
-        toast.error(data.error || 'Erro ao criar usuário');
+        toast.error(result.error || 'Erro ao criar usuário');
       }
     } catch (error) {
       console.error('Erro ao registrar:', error);
-      toast.error('Erro interno do servidor');
+      toast.error(error instanceof Error ? error.message : 'Erro interno do servidor');
     } finally {
       setIsLoading(false);
     }

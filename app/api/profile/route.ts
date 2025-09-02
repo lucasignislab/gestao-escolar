@@ -1,18 +1,24 @@
 // app/api/profile/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { getUserProfile } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import { getCurrentUserProfile } from '@/lib/authorization';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const profile = await getUserProfile();
+    const profile = await getCurrentUserProfile();
     
     if (!profile) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Usuário não autenticado' },
+        { status: 401 }
+      );
     }
 
     return NextResponse.json(profile);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Erro ao buscar perfil:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
   }
 }
