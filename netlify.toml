@@ -4,6 +4,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Configurações para o Prisma
+  PRISMA_CLI_BINARY_TARGETS = "native,rhel-openssl-1.0.x"
+  # Configurações para Next.js
+  NEXT_TELEMETRY_DISABLED = "1"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

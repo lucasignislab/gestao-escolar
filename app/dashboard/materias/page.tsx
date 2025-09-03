@@ -282,7 +282,7 @@ function MateriasPageContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza de que deseja excluir a matéria "{materiaToDelete?.name}"?
+              Tem certeza de que deseja excluir a matéria &quot;{materiaToDelete?.name}&quot;?
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
