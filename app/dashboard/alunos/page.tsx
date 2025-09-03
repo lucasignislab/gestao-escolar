@@ -12,7 +12,13 @@ const prisma = new PrismaClient();
  */
 export default async function AlunosPage() {
   // Busca os dados principais e os dados para os relacionamentos 
-  const alunos = await prisma.student.findMany({ include: { class: true, parent: true } }); 
+  const alunos = await prisma.student.findMany({ 
+    include: { 
+      class: true, 
+      parent: true,
+      grade: true // Incluindo a relação grade para corresponder ao tipo StudentWithRelations
+    } 
+  }); 
   const turmas = await prisma.class.findMany(); 
   const responsaveis = await prisma.parent.findMany(); 
 
