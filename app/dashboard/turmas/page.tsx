@@ -2,6 +2,8 @@
 import { PrismaClient } from '@prisma/client'; 
 import TurmaPageClient from './TurmaPageClient'; 
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient(); 
 
 export default async function TurmasPage() { 

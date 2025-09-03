@@ -2,6 +2,8 @@
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar'; // Importe a Sidebar
 
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-gray-50">
