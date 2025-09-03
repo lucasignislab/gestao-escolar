@@ -17,8 +17,8 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   // Otimizações para produção
   // swcMinify foi removido no Next.js 15.x
-  // Removendo export estático para permitir funcionalidades dinâmicas
-  // output: 'export',
+  // Configuração para permitir funcionalidades dinâmicas com cookies
+  output: 'standalone',
   images: {
     unoptimized: true,
   },
