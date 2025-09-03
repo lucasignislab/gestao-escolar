@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["rhel-openssl-1.0.x"]
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -19,7 +19,7 @@ enum Role {
 
 // Tabela para guardar dados públicos dos usuários
 model Profile {
-  id        String  @id @default(uuid()) // Usa o mesmo ID da tabela de auth do Supabase
+  id        String  @id @default(uuid()) // Usa o mesmo ID da tabela de auth do Appwrite
   username  String? @unique
   role      Role    @default(ALUNO)
   avatarUrl String?

@@ -69,14 +69,14 @@ async function deleteUserLocal(email) {
     if (!teacher && parents.length === 0 && orphanProfiles.length === 0) {
       console.log('⚠️  Nenhum usuário encontrado no banco local com este email');
       console.log('💡 Isso pode significar que:');
-      console.log('   - O usuário existe apenas no Supabase Auth');
+      console.log('   - O usuário existe apenas no Appwrite Auth');
       console.log('   - O email está incorreto');
       console.log('   - O usuário já foi deletado');
     }
     
     console.log('🎉 Limpeza do banco local concluída!');
     console.log('📝 Agora você pode tentar criar uma nova conta.');
-    console.log('⚠️  NOTA: Se o usuário ainda existir no Supabase Auth, você precisará deletá-lo manualmente no painel do Supabase.');
+    console.log('⚠️  NOTA: Se o usuário ainda existir no Appwrite Auth, você precisará deletá-lo manualmente no console do Appwrite.');
     
   } catch (error) {
     console.error('❌ Erro durante a limpeza do banco local:', error);

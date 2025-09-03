@@ -1,51 +1,47 @@
 // scripts/delete-user.js
 const { PrismaClient } = require('@prisma/client');
-const { createClient } = require('@supabase/supabase-js');
+const { Client, Users } = require('node-appwrite');
 
 const prisma = new PrismaClient();
 
-// Configuração do Supabase (usando service role key para operações admin)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Chave de service role necessária
+// Configuração do Appwrite (usando API key para operações admin)
+const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+const appwriteProject = process.env.NEXT_PUBLIC_APPWRITE_PROJECT;
+const appwriteApiKey = process.env.APPWRITE_API_KEY; // Chave de API necessária para operações admin
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são necessárias');
+if (!appwriteEndpoint || !appwriteProject || !appwriteApiKey) {
+  console.error('❌ Variáveis de ambiente NEXT_PUBLIC_APPWRITE_ENDPOINT, NEXT_PUBLIC_APPWRITE_PROJECT e APPWRITE_API_KEY são necessárias');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+const client = new Client()
+  .setEndpoint(appwriteEndpoint)
+  .setProject(appwriteProject)
+  .setKey(appwriteApiKey);
+
+const users = new Users(client);
 
 async function deleteUser(email) {
   try {
     console.log(`🗑️  Deletando usuário com email: ${email}`);
     
-    // 1. Buscar o usuário no Supabase Auth pelo email
-    console.log('🔍 Buscando usuário no Supabase Auth...');
-    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+    // 1. Buscar o usuário no Appwrite Auth pelo email
+    console.log('🔍 Buscando usuário no Appwrite Auth...');
+    const usersList = await users.list();
     
-    if (listError) {
-      console.error('❌ Erro ao listar usuários:', listError.message);
-      return;
-    }
-    
-    const user = users.users.find(u => u.email === email);
+    const user = usersList.users.find(u => u.email === email);
     
     if (!user) {
-      console.log('⚠️  Usuário não encontrado no Supabase Auth');
+      console.log('⚠️  Usuário não encontrado no Appwrite Auth');
     } else {
-      console.log(`✅ Usuário encontrado no Supabase Auth: ${user.id}`);
+      console.log(`✅ Usuário encontrado no Appwrite Auth: ${user.$id}`);
       
       // 2. Deletar dados relacionados no banco local primeiro
       console.log('🗑️  Deletando dados do banco local...');
       
       // Buscar o profile do usuário
       const profile = await prisma.profile.findUnique({
-        where: { id: user.id },
+        where: { id: user.$id },
         include: {
           teacher: true,
           student: true,
@@ -73,20 +69,19 @@ async function deleteUser(email) {
         }
         
         // Deletar o profile
-        await prisma.profile.delete({ where: { id: user.id } });
+        await prisma.profile.delete({ where: { id: user.$id } });
         console.log('✅ Dados do banco local deletados');
       } else {
         console.log('⚠️  Profile não encontrado no banco local');
       }
       
-      // 3. Deletar o usuário do Supabase Auth
-      console.log('🗑️  Deletando usuário do Supabase Auth...');
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
-      
-      if (deleteError) {
-        console.error('❌ Erro ao deletar usuário do Supabase Auth:', deleteError.message);
-      } else {
-        console.log('✅ Usuário deletado do Supabase Auth');
+      // 3. Deletar o usuário do Appwrite Auth
+      console.log('🗑️  Deletando usuário do Appwrite Auth...');
+      try {
+        await users.delete(user.$id);
+        console.log('✅ Usuário deletado do Appwrite Auth');
+      } catch (deleteError) {
+        console.error('❌ Erro ao deletar usuário do Appwrite Auth:', deleteError.message);
       }
     }
     

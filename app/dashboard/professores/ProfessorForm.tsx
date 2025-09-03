@@ -12,7 +12,7 @@ import { professorSchema, ProfessorFormData } from '@/lib/schemas';
 import { createProfessor, updateProfessor } from './actions';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { client, storage } from '@/lib/appwrite';
 
 /**
  * Interface para as propriedades do componente ProfessorForm
@@ -33,7 +33,6 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
   const formTitle = teacher ? 'Editar Professor' : 'Adicionar Novo Professor';
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
-  const supabase = createClient();
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProfessorFormData>({
     resolver: zodResolver(professorSchema),
@@ -59,18 +58,22 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
 
     setUploading(true);
     try {
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(`public/${Date.now()}_${file.name}`, file);
+      const fileName = `${Date.now()}_${file.name}`;
+      
+      // Upload para o Appwrite Storage
+      const response = await storage.createFile(
+        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
+        fileName,
+        file
+      );
 
-      if (error) {
-        toast.error('Falha no upload da imagem.');
-        return;
-      }
+      // Obter a URL pública do arquivo
+      const fileUrl = storage.getFileView(
+        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
+        response.$id
+      );
 
-      // Construir a URL pública
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path);
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(fileUrl.toString());
       toast.success('Imagem carregada com sucesso!');
     } catch (error) {
       console.error('Erro no upload:', error);

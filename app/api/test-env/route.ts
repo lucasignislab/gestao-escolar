@@ -7,18 +7,21 @@ import { NextResponse } from 'next/server';
  */
 export async function GET() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const databaseUrl = process.env.DATABASE_URL;
+    // Verificar variáveis do Appwrite
+    const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+    const appwriteProject = process.env.NEXT_PUBLIC_APPWRITE_PROJECT;
+    const appwriteBucket = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID;
 
     return NextResponse.json({
-      environment: process.env.NODE_ENV,
-      supabaseUrl: supabaseUrl ? 'DEFINIDA' : 'NÃO DEFINIDA',
-      supabaseKey: supabaseKey ? 'DEFINIDA' : 'NÃO DEFINIDA',
-      databaseUrl: databaseUrl ? 'DEFINIDA' : 'NÃO DEFINIDA',
-      // Mostrar apenas os primeiros caracteres para debug
-      supabaseUrlPreview: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'N/A',
-      timestamp: new Date().toISOString()
+      message: 'Variáveis de ambiente carregadas',
+      env: {
+        appwriteEndpoint: appwriteEndpoint ? 'DEFINIDA' : 'NÃO DEFINIDA',
+        appwriteProject: appwriteProject ? 'DEFINIDA' : 'NÃO DEFINIDA',
+        appwriteBucket: appwriteBucket ? 'DEFINIDA' : 'NÃO DEFINIDA',
+      },
+      preview: {
+        appwriteEndpointPreview: appwriteEndpoint ? appwriteEndpoint.substring(0, 30) + '...' : 'N/A',
+      }
     });
   } catch (error) {
     return NextResponse.json(

@@ -1,7 +1,7 @@
 // app/api/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { createServerClient } from '@supabase/ssr';
+import { Client, Account, ID } from 'appwrite';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
@@ -27,21 +27,13 @@ export async function POST(request: NextRequest) {
     const { username, email, password, role } = validatedData;
     console.log('Dados validados:', { username, email, role });
 
-    // Criar cliente Supabase
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            // No-op for server-side registration
-          },
-        },
-      }
-    );
+    // Criar cliente Appwrite
+    const client = new Client();
+    client
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+    
+    const account = new Account(client);
 
     // Verificar se o usuário já existe no banco local
     console.log('Verificando se usuário existe no banco local...');
@@ -58,36 +50,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar usuário no Supabase
-    console.log('Criando usuário no Supabase...');
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Criar usuário no Appwrite
+    console.log('Criando usuário no Appwrite...');
+    const userId = ID.unique();
+    const user = await account.create(
+      userId,
       email,
       password,
-    });
+      username
+    );
 
-    if (authError) {
-      console.log('Erro ao criar usuário no Supabase:', authError);
+    if (!user) {
+      console.log('Usuário não foi criado no Appwrite');
       return NextResponse.json(
-        { error: 'Erro ao criar usuário: ' + authError.message },
-        { status: 400 }
-      );
-    }
-
-    if (!authData.user) {
-      console.log('Usuário não foi criado no Supabase');
-      return NextResponse.json(
-        { error: 'Erro ao criar usuário no Supabase' },
+        { error: 'Erro ao criar usuário no Appwrite' },
         { status: 500 }
       );
     }
 
-    console.log('Usuário criado no Supabase:', authData.user.id);
+    console.log('Usuário criado no Appwrite:', user.$id);
 
-    // Criar perfil no banco local usando o ID do Supabase
+    // Criar perfil no banco local usando o ID do Appwrite
     console.log('Criando perfil no banco local...');
     const profile = await prisma.profile.create({
       data: {
-        id: authData.user.id, // Usar o ID do Supabase
+        id: user.$id, // Usar o ID do Appwrite
         username,
         role,
       },

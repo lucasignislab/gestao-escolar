@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase'; // Importa nossa função do Capítulo 11
+import { createClient } from '@/lib/appwrite';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,28 +20,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const { account } = createClient();
 
   /**
    * Manipula o processo de login do usuário
-   * Autentica com Supabase e redireciona em caso de sucesso
+   * Autentica com Appwrite e redireciona em caso de sucesso
    */
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast.error("Falha no login: " + error.message);
-    } else {
+    try {
+      const session = await account.createEmailPasswordSession(email, password);
+      
+      // Salvar sessão nos cookies para o middleware
+      document.cookie = `appwrite-session=${session.secret}; path=/; secure; samesite=strict`;
+      
       toast.success("Login realizado com sucesso!");
-      // Redirecionar para o dashboard - o middleware cuidará da autenticação
-      window.location.href = '/dashboard';
+      router.push('/dashboard'); // Redireciona para o dashboard
+      router.refresh(); // Força a atualização do layout do servidor
+    } catch (error: any) {
+      toast.error("Falha no login: " + (error.message || 'Erro desconhecido'));
     }
+    
     setLoading(false);
   };
 

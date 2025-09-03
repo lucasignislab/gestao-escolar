@@ -12,7 +12,7 @@ import { administradorSchema, AdministradorFormData } from '@/lib/schemas';
 import { createAdministrador, updateAdministrador } from './actions';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { client, storage } from '@/lib/appwrite';
 
 /**
  * Interface para as propriedades do componente AdministradorForm
@@ -33,7 +33,6 @@ export default function AdministradorForm({ isOpen, onOpenChange, administrador 
   const formTitle = administrador ? 'Editar Administrador' : 'Adicionar Novo Administrador';
   const [avatarUrl, setAvatarUrl] = useState<string>(administrador?.avatarUrl || '');
   const [uploading, setUploading] = useState(false);
-  const supabase = createClient();
 
   const { register, handleSubmit, formState: { errors } } = useForm<AdministradorFormData>({
     resolver: zodResolver(administradorSchema),
@@ -45,7 +44,7 @@ export default function AdministradorForm({ isOpen, onOpenChange, administrador 
   });
 
   /**
-   * Função para fazer upload de arquivo para o Supabase Storage
+   * Função para fazer upload de arquivo para o Appwrite Storage
    * @param event - Evento de mudança do input file
    */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,22 +58,21 @@ export default function AdministradorForm({ isOpen, onOpenChange, administrador 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
+      // Upload para o Appwrite Storage
+      const response = await storage.createFile(
+        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
+        fileName,
+        file
+      );
 
       // Obter a URL pública do arquivo
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      const fileUrl = storage.getFileView(
+        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
+        response.$id
+      );
 
-      setAvatarUrl(data.publicUrl);
+      setAvatarUrl(fileUrl.toString());
       toast.success('Imagem carregada com sucesso!');
     } catch (error) {
       toast.error('Erro ao fazer upload da imagem: ' + (error as Error).message);

@@ -42,7 +42,7 @@ export async function createProfessor(formData: FormData) {
   }
 
   try {
-    // Lógica para criar o usuário no Supabase Auth primeiro (essencial!)
+    // Lógica para criar o usuário no Appwrite Auth primeiro (essencial!)
     // ...
     
     // Criar o Profile primeiro
@@ -161,7 +161,7 @@ export async function deleteProfessor(id: string) {
   }
 
   try {
-    // Lógica para excluir o usuário do Supabase Auth e Profile primeiro!
+    // Lógica para excluir o usuário do Appwrite Auth e Profile primeiro!
     await prisma.teacher.delete({ where: { id } });
     revalidatePath('/dashboard/professores');
     return { success: true };
