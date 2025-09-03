@@ -38,19 +38,9 @@ export default function LoginPage() {
     if (error) {
       toast.error("Falha no login: " + error.message);
     } else {
-      // Garantir que os tokens sejam salvos como cookies first-party visíveis pelo middleware
-      const { data: { session } } = await supabase.auth.getSession();
-      // Deriva o projectRef a partir da URL pública do Supabase para alinhar o nome dos cookies com o padrão esperado pelo Auth Helpers
-      const projectRefMatch = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^\.]+)\./); 
-      const projectRef = projectRefMatch ? projectRefMatch[1] : '';
-      if (session && projectRef) {
-        // Usar o padrão de cookies que o Supabase SSR espera
-        document.cookie = `sb-${projectRef}-auth-token=${encodeURIComponent(JSON.stringify(session))}; path=/`;
-      }
-
       toast.success("Login realizado com sucesso!");
-      router.push('/dashboard'); // Redireciona para o dashboard
-      router.refresh(); // Força a atualização do layout do servidor
+      // Redirecionar para o dashboard - o middleware cuidará da autenticação
+      window.location.href = '/dashboard';
     }
     setLoading(false);
   };
