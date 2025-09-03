@@ -5,11 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Student } from '@prisma/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { alunoSchema, AlunoFormData } from '@/lib/schemas';
-import { createAluno, updateAluno, buscarResponsaveis, buscarTurmas, buscarAnosEscolares } from './actions';
+import { createAluno, updateAluno, buscarAnosEscolares } from './actions';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { StudentWithRelations } from './columns';
@@ -44,6 +45,8 @@ interface AlunoFormProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: StudentWithRelations | null;
+  turmas: Turma[];
+  responsaveis: Responsavel[];
 }
 
 /**
@@ -52,7 +55,7 @@ interface AlunoFormProps {
  * @param onOpenChange - Função para controlar a abertura/fechamento do modal
  * @param student - Dados do aluno para edição (null para novo aluno)
  */
-export default function AlunoForm({ isOpen, onOpenChange, student }: AlunoFormProps) {
+export default function AlunoForm({ isOpen, onOpenChange, student, turmas: turmasProps, responsaveis: responsaveisProps }: AlunoFormProps) {
   const formTitle = student ? 'Editar Aluno' : 'Adicionar Novo Aluno';
   
   // Estados para os dados dos selects
@@ -92,14 +95,12 @@ export default function AlunoForm({ isOpen, onOpenChange, student }: AlunoFormPr
       const carregarDados = async () => {
         try {
           setLoading(true);
-          const [responsaveisData, turmasData, anosData] = await Promise.all([
-            buscarResponsaveis(),
-            buscarTurmas(),
-            buscarAnosEscolares(),
-          ]);
+          // Usar os dados passados como props
+          setResponsaveis(responsaveisProps);
+          setTurmas(turmasProps);
           
-          setResponsaveis(responsaveisData);
-          setTurmas(turmasData);
+          // Ainda precisamos buscar os anos escolares
+          const anosData = await buscarAnosEscolares();
           setAnosEscolares(anosData);
         } catch (error) {
           console.error('Erro ao carregar dados:', error);
@@ -226,53 +227,56 @@ export default function AlunoForm({ isOpen, onOpenChange, student }: AlunoFormPr
             
             <div className="grid gap-2">
               <Label htmlFor="parentId">Responsável</Label>
-              <select 
-                id="parentId" 
-                {...register('parentId')}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">Selecione um responsável</option>
-                {responsaveis.map((responsavel) => (
-                  <option key={responsavel.id} value={responsavel.id}>
-                    {responsavel.name} {responsavel.surname}
-                  </option>
-                ))}
-              </select>
+              <Select onValueChange={(value) => setValue('parentId', value)} defaultValue={watch('parentId')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {responsaveis.map((responsavel) => (
+                    <SelectItem key={responsavel.id} value={responsavel.id}>
+                      {responsavel.name} {responsavel.surname}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.parentId && <p className="text-sm text-red-500">{errors.parentId.message}</p>}
             </div>
             
             <div className="grid gap-2">
               <Label htmlFor="gradeId">Ano Escolar</Label>
-              <select 
-                id="gradeId" 
-                {...register('gradeId')}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">Selecione um ano escolar</option>
-                {anosEscolares.map((ano) => (
-                  <option key={ano.id} value={ano.id}>
-                    {ano.level}º Ano
-                  </option>
-                ))}
-              </select>
+              <Select onValueChange={(value) => setValue('gradeId', value)} defaultValue={watch('gradeId')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um ano escolar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {anosEscolares.map((ano) => (
+                    <SelectItem key={ano.id} value={ano.id}>
+                      {ano.level}º Ano
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.gradeId && <p className="text-sm text-red-500">{errors.gradeId.message}</p>}
             </div>
             
             <div className="grid gap-2">
               <Label htmlFor="classId">Turma</Label>
-              <select 
-                id="classId" 
-                {...register('classId')}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <Select 
+                onValueChange={(value) => setValue('classId', value)} 
+                defaultValue={watch('classId')}
                 disabled={!selectedGradeId}
               >
-                <option value="">Selecione uma turma</option>
-                {turmasFiltradas.map((turma) => (
-                  <option key={turma.id} value={turma.id}>
-                    {turma.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma turma" />
+                </SelectTrigger>
+                <SelectContent>
+                  {turmasFiltradas.map((turma) => (
+                    <SelectItem key={turma.id} value={turma.id}>
+                      {turma.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.classId && <p className="text-sm text-red-500">{errors.classId.message}</p>}
               {!selectedGradeId && (
                 <p className="text-sm text-gray-500">Selecione um ano escolar primeiro</p>

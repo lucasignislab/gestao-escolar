@@ -1,11 +1,11 @@
 // app/dashboard/professores/columns.tsx
 'use client';
 
-import { ColumnDef } from '@tanstack/react-table';
+import { ColumnDef, Row } from '@tanstack/react-table';
 import { Teacher } from '@prisma/client'; // Importe o tipo gerado pelo Prisma
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Edit } from 'lucide-react';
 
 /**
  * Interface para as props das colunas
@@ -24,6 +24,44 @@ interface ColumnsProps {
  * @param onEdit - Função para editar um professor
  * @param onDelete - Função para excluir um professor
  */
+// Definição básica das colunas sem ações
+const baseColumns: ColumnDef<Teacher>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nome',
+    cell: ({ row }) => `${row.original.name} ${row.original.surname}`,
+  },
+  {
+    accessorKey: 'email',
+    header: 'E-mail',
+  },
+  {
+    accessorKey: 'phone',
+    header: 'Telefone',
+  }
+];
+
+// Exportação para o novo código com função de edição
+export const columns = (onEdit: (teacher: Teacher) => void) => {
+  return [
+    ...baseColumns,
+    {
+      id: 'actions',
+      cell: ({ row }: { row: Row<Teacher> }) => {
+        const professor = row.original;
+        
+        return (
+          <Button variant="ghost" size="sm" onClick={() => onEdit(professor)}>
+            <Edit className="h-4 w-4 mr-1" />
+            Editar
+          </Button>
+        );
+      },
+    },
+  ];
+};
+
+// Exportação para compatibilidade com o código antigo (com ações)
 export const createColumns = ({ onEdit, onDelete, canEdit, canDelete, isAdmin }: ColumnsProps): ColumnDef<Teacher>[] => [
   {
     accessorKey: 'name',

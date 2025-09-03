@@ -9,7 +9,7 @@ import { Teacher } from '@prisma/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { professorSchema, ProfessorFormData } from '@/lib/schemas';
-import { createProfessor, updateProfessor } from './actions';
+import { createProfessor, updateProfessor, createProfessorAction, updateProfessorAction } from './actions';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { client, storage } from '@/lib/appwrite';
@@ -33,8 +33,9 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
   const formTitle = teacher ? 'Editar Professor' : 'Adicionar Novo Professor';
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProfessorFormData>({
+  const { register, handleSubmit, formState: { errors }, reset, setError } = useForm<ProfessorFormData>({
     resolver: zodResolver(professorSchema),
     defaultValues: teacher ? {
       name: teacher.name,
@@ -88,34 +89,74 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
    * @param data - Dados validados do formulário
    */
   const onSubmit = async (data: ProfessorFormData) => {
-    const formData = new FormData();
-    
-    // Se estiver editando, adicionar o ID do professor
-    if (teacher) {
-      formData.append('id', teacher.id);
-    }
-    
-    Object.entries(data).forEach(([key, value]) => {
-      if (value) {
-        formData.append(key, value);
+    setIsSubmitting(true);
+    try {
+      // Se estiver editando, usar a nova action de atualização
+      if (teacher) {
+        // Preparar dados para atualização
+        const updateData = {
+          ...data,
+          id: teacher.id
+        };
+        
+        // Adicionar URL do avatar se foi feito upload
+        if (avatarUrl) {
+          // Nota: avatarUrl será tratado separadamente no backend
+          // pois está na tabela Profile, não diretamente em Teacher
+          (updateData as any).avatarUrl = avatarUrl;
+        }
+
+        const result = await updateProfessorAction(updateData);
+
+        if (result.success) {
+          toast.success('Professor atualizado com sucesso!');
+          onOpenChange(false);
+          reset(); // Resetar o formulário
+        } else {
+          toast.error(result.message || 'Falha ao atualizar professor.');
+          
+          // Exibir erros de validação nos campos específicos
+          if (result.errors) {
+            Object.entries(result.errors).forEach(([field, messages]) => {
+              if (messages && messages.length > 0) {
+                setError(field as keyof ProfessorFormData, {
+                  type: 'server',
+                  message: messages[0]
+                });
+              }
+            });
+          }
+        }
+      } else {
+        // Para criação, usar a action de criação
+        const result = await createProfessorAction(data);
+
+        if (result.success) {
+          toast.success('Professor criado com sucesso!');
+          reset(); // Resetar o formulário
+          onOpenChange(false); // Fecha o modal
+        } else {
+          // Mostra uma mensagem de erro geral
+          toast.error(result.message || 'Houve um erro.');
+          
+          // Exibir erros de validação nos campos específicos
+          if (result.errors) {
+            Object.entries(result.errors).forEach(([field, messages]) => {
+              if (messages && messages.length > 0) {
+                setError(field as keyof ProfessorFormData, {
+                  type: 'server',
+                  message: messages[0]
+                });
+              }
+            });
+          }
+        }
       }
-    });
-
-    // Adicionar URL do avatar se foi feito upload
-    if (avatarUrl) {
-      formData.append('avatarUrl', avatarUrl);
-    }
-
-    // Chamar a action apropriada (create ou update)
-    const result = teacher 
-      ? await updateProfessor(formData)
-      : await createProfessor(formData);
-
-    if (result.success) {
-      toast.success(teacher ? 'Professor atualizado com sucesso!' : 'Professor criado com sucesso!');
-      onOpenChange(false);
-    } else {
-      toast.error(result.message || (teacher ? 'Falha ao atualizar professor.' : 'Falha ao criar professor.'));
+    } catch (error) {
+      console.error('Erro ao processar formulário:', error);
+      toast.error('Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -172,8 +213,10 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
               </div>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={uploading}>
-            {teacher ? 'Salvar Alterações' : 'Criar Professor'}
+          <Button type="submit" className="w-full" disabled={uploading || isSubmitting}>
+            {isSubmitting 
+              ? 'Salvando...' 
+              : teacher ? 'Salvar Alterações' : 'Criar Professor'}
           </Button>
         </form>
       </DialogContent>

@@ -1,260 +1,91 @@
-// app/dashboard/turmas/TurmaForm.tsx
-"use client";
+// app/dashboard/turmas/TurmaForm.tsx 
+'use client'; 
 
-import { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, ControllerRenderProps } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { turmaSchema } from "@/lib/schemas";
-import { createTurma, updateTurma } from "./actions";
-import { toast } from "sonner";
-import { Class } from "@prisma/client";
+import { useForm } from 'react-hook-form'; 
+import { zodResolver } from '@hookform/resolvers/zod'; 
+import { toast } from 'sonner'; 
+import { TurmaFormData, turmaSchema } from '@/lib/schemas'; 
+import { Button } from '@/components/ui/button'; 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; 
+import { Input } from '@/components/ui/input'; 
+import { Label } from '@/components/ui/label'; 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; 
+import { Grade, Teacher } from '@prisma/client'; 
+import { createTurmaAction, updateTurmaAction } from './actions'; 
+import { TurmaComRelacoes } from './columns'; 
 
-// Tipo para turma com relações incluídas
-type TurmaWithRelations = Class & {
-  grade: {
-    id: string;
-    level: number;
-  };
-  supervisor: {
-    id: string;
-    name: string;
-    surname: string;
-  } | null;
-  _count: {
-    students: number;
-  };
-};
+interface TurmaFormProps { 
+  isOpen: boolean; 
+  onOpenChange: (isOpen: boolean) => void; 
+  turma: TurmaComRelacoes | null; 
+  anosEscolares: Grade[]; 
+  professores: Teacher[]; 
+} 
 
-// Tipo para professor
-type Professor = {
-  id: string;
-  name: string;
-  surname: string;
-};
+export default function TurmaForm({ isOpen, onOpenChange, turma, anosEscolares, professores }: TurmaFormProps) { 
+  const form = useForm<TurmaFormData>({ 
+    resolver: zodResolver(turmaSchema), 
+    defaultValues: turma || { name: "", capacity: 25 }, 
+  }); 
 
-// Tipo para ano escolar
-type AnoEscolar = {
-  id: string;
-  level: number;
-};
+  const onSubmit = async (data: TurmaFormData) => { 
+    const action = turma ? updateTurmaAction : createTurmaAction; 
+    const result = await action(turma ? { ...data, id: turma.id } : data); 
 
-interface TurmaFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  turma?: TurmaWithRelations;
-  professores: Professor[];
-  anosEscolares: AnoEscolar[];
-}
+    if (result.success) { 
+      toast.success(`Turma ${turma ? 'atualizada' : 'criada'} com sucesso!`); 
+      onOpenChange(false); 
+    } else { 
+      toast.error(result.message || 'Ocorreu um erro.'); 
+    } 
+  }; 
 
-export default function TurmaForm({
-  isOpen,
-  onClose,
-  onSuccess,
-  turma,
-  professores,
-  anosEscolares,
-}: TurmaFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const isEditing = !!turma;
-
-  const form = useForm<z.infer<typeof turmaSchema>>({
-    resolver: zodResolver(turmaSchema),
-    defaultValues: {
-      name: turma?.name || "",
-      capacity: turma?.capacity || 30,
-      gradeId: turma?.gradeId || "",
-      supervisorId: turma?.supervisorId || "",
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof turmaSchema>) => {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('name', values.name);
-      formData.append('capacity', values.capacity.toString());
-      formData.append('gradeId', values.gradeId);
-      if (values.supervisorId) {
-        formData.append('supervisorId', values.supervisorId);
-      }
-
-      if (isEditing) {
-        formData.append('id', turma.id);
-        const result = await updateTurma(formData);
-        if (result.success) {
-          toast.success("Turma editada com sucesso!");
-          onSuccess();
-          onClose();
-        } else {
-          toast.error(result.message || "Erro ao editar turma");
-        }
-      } else {
-        const result = await createTurma(formData);
-        if (result.success) {
-          toast.success("Turma criada com sucesso!");
-          onSuccess();
-          onClose();
-        } else {
-          toast.error(result.message || "Erro ao criar turma");
-        }
-      }
-    } catch {
-      toast.error("Erro inesperado. Tente novamente.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    form.reset();
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar Turma" : "Nova Turma"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Edite as informações da turma."
-              : "Preencha as informações para criar uma nova turma."}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }: { field: ControllerRenderProps<z.infer<typeof turmaSchema>, "name"> }) => (
-                <FormItem>
-                  <FormLabel>Nome da Turma</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: Turma A, Turma B..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="capacity"
-              render={({ field }: { field: ControllerRenderProps<z.infer<typeof turmaSchema>, "capacity"> }) => (
-                <FormItem>
-                  <FormLabel>Capacidade</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="30"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="gradeId"
-              render={({ field }: { field: ControllerRenderProps<z.infer<typeof turmaSchema>, "gradeId"> }) => (
-                <FormItem>
-                  <FormLabel>Ano Escolar</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o ano escolar" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {anosEscolares.map((ano) => (
-                        <SelectItem key={ano.id} value={ano.id}>
-                          {ano.level}º Ano
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="supervisorId"
-              render={({ field }: { field: ControllerRenderProps<z.infer<typeof turmaSchema>, "supervisorId"> }) => (
-                <FormItem>
-                  <FormLabel>Professor Supervisor (Opcional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um professor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">Nenhum professor</SelectItem>
-                      {professores.map((professor) => (
-                        <SelectItem key={professor.id} value={professor.id}>
-                          {professor.name} {professor.surname}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading
-                  ? "Salvando..."
-                  : isEditing
-                  ? "Salvar Alterações"
-                  : "Criar Turma"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
+  return ( 
+    <Dialog open={isOpen} onOpenChange={onOpenChange}> 
+      <DialogContent> 
+        <DialogHeader> 
+          <DialogTitle>{turma ? 'Editar Turma' : 'Adicionar Nova Turma'}</DialogTitle> 
+        </DialogHeader> 
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4"> 
+          <div> 
+            <Label htmlFor="name">Nome da Turma (Ex: 1A, 2B)</Label> 
+            <Input id="name" {...form.register('name')} /> 
+            {form.formState.errors.name && <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>} 
+          </div> 
+          <div> 
+            <Label htmlFor="capacity">Capacidade de Alunos</Label> 
+            <Input id="capacity" type="number" {...form.register('capacity')} /> 
+            {form.formState.errors.capacity && <p className="text-sm text-red-500 mt-1">{form.formState.errors.capacity.message}</p>} 
+          </div> 
+          <div> 
+            <Label>Ano Escolar</Label> 
+            <Select onValueChange={(value) => form.setValue('gradeId', value)} defaultValue={turma?.gradeId}> 
+              <SelectTrigger><SelectValue placeholder="Selecione o ano escolar" /></SelectTrigger> 
+              <SelectContent> 
+                {anosEscolares.map((grade) => ( 
+                  <SelectItem key={grade.id} value={grade.id}>{grade.level}º Ano</SelectItem> 
+                ))} 
+              </SelectContent> 
+            </Select> 
+             {form.formState.errors.gradeId && <p className="text-sm text-red-500 mt-1">{form.formState.errors.gradeId.message}</p>} 
+          </div> 
+          <div> 
+            <Label>Professor Supervisor</Label> 
+            <Select onValueChange={(value) => form.setValue('supervisorId', value)} defaultValue={turma?.supervisorId || undefined}> 
+              <SelectTrigger><SelectValue placeholder="Selecione um professor" /></SelectTrigger> 
+              <SelectContent> 
+                {professores.map((prof) => ( 
+                  <SelectItem key={prof.id} value={prof.id}>{prof.name} {prof.surname}</SelectItem> 
+                ))} 
+              </SelectContent> 
+            </Select> 
+            {form.formState.errors.supervisorId && <p className="text-sm text-red-500 mt-1">{form.formState.errors.supervisorId.message}</p>} 
+          </div> 
+          <Button type="submit" disabled={form.formState.isSubmitting} className="w-full"> 
+            {form.formState.isSubmitting ? 'Salvando...' : 'Salvar'} 
+          </Button> 
+        </form> 
+      </DialogContent> 
+    </Dialog> 
+  ); 
 }

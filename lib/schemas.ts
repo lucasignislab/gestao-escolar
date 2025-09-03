@@ -137,10 +137,10 @@ export type AlunoListResponse = z.infer<typeof alunoListResponseSchema>;
  */
 export const turmaSchema = z.object({
   id: z.string().optional(), // Opcional, usado apenas para edição
-  name: z.string().min(2, { message: 'O nome da turma deve ter no mínimo 2 caracteres.' }),
-  capacity: z.number().min(1, { message: 'A capacidade deve ser no mínimo 1 aluno.' }).max(50, { message: 'A capacidade máxima é de 50 alunos.' }),
-  gradeId: z.string().min(1, { message: 'Ano escolar é obrigatório.' }),
-  supervisorId: z.string().optional(), // Professor supervisor é opcional
+  name: z.string().min(2, { message: "O nome da turma deve ter no mínimo 2 caracteres." }),
+  capacity: z.coerce.number().min(1, { message: "A capacidade deve ser de no mínimo 1." }),
+  gradeId: z.string().min(1, { message: "Selecione um ano escolar." }),
+  supervisorId: z.string().min(1, { message: "Selecione um professor supervisor." }),
 });
 
 /**

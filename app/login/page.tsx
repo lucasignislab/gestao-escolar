@@ -31,14 +31,42 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Limpar qualquer sessão existente
+      try {
+        await account.deleteSession('current');
+        document.cookie = 'appwrite-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      } catch (sessionError) {
+        console.log('Nenhuma sessão ativa para encerrar ou erro ao encerrar:', sessionError);
+      }
+
+      // Criar nova sessão
       const session = await account.createEmailPasswordSession(email, password);
+      console.log('Sessão criada com sucesso:', session.$id);
       
-      // Salvar sessão nos cookies para o middleware
-      document.cookie = `appwrite-session=${session.secret}; path=/; secure; samesite=strict`;
+      // Definir o cookie manualmente com o valor da sessão
+      // Usar o nome exato que o middleware está procurando
+      const cookieValue = session.secret;
+      document.cookie = `appwrite-session=${cookieValue}; path=/; max-age=2592000; domain=${window.location.hostname}`;
+      
+      // Verificar se o cookie foi definido
+      console.log('Cookie após definição manual:', document.cookie);
+      console.log('Todos os cookies após login:', document.cookie.split('; ').join('\n'));
       
       toast.success("Login realizado com sucesso!");
-      router.push('/dashboard'); // Redireciona para o dashboard
-      router.refresh(); // Força a atualização do layout do servidor
+      
+      // Criar um formulário para fazer um POST para o dashboard
+      // Isso força um redirecionamento completo com os cookies
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/dashboard';
+      document.body.appendChild(form);
+      form.submit();
+      
+      // Fallback caso o formulário não seja submetido
+      setTimeout(() => {
+        console.log('Usando fallback para redirecionamento');
+        window.location.href = '/dashboard';
+      }, 1000);
     } catch (error: any) {
       toast.error("Falha no login: " + (error.message || 'Erro desconhecido'));
     }

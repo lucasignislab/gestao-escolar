@@ -1,11 +1,22 @@
 // app/dashboard/alunos/actions.ts
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createAlunoSchema, updateAlunoSchema } from '@/lib/schemas';
+import { createAlunoSchema, updateAlunoSchema, alunoSchema } from '@/lib/schemas';
 import { requirePermission, getCurrentUserProfile, isAdmin, isAluno } from '@/lib/authorization';
+import { Client, Users, ID, Query } from 'node-appwrite';
+import { APPWRITE_CONFIG } from '@/lib/appwrite';
+import * as z from 'zod';
+
+// Cliente Appwrite para operações no servidor
+const client = new Client()
+  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+  .setKey(process.env.APPWRITE_API_KEY!);
+
+const users = new Users(client);
 
 const prisma = new PrismaClient();
 
@@ -69,6 +80,71 @@ export async function createAluno(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error('Erro ao criar aluno:', error);
+    return { success: false, message: 'Ocorreu um erro ao criar o aluno.' };
+  }
+}
+
+/**
+ * Função para criar um aluno a partir de dados validados
+ * @param data - Dados do aluno a serem validados
+ * @returns Objeto com status de sucesso ou erro
+ */
+export async function createAlunoAction(data: unknown) {
+  // Passo 1: Validar os dados com Zod
+  const result = alunoSchema.safeParse(data);
+  if (!result.success) {
+    return { success: false, errors: result.error.flatten().fieldErrors };
+  }
+  const { name, surname, parentId, classId, gradeId } = result.data;
+
+  try {
+    // Passo 2: Criar o usuário no Appwrite Auth
+    const newUser = await users.create(
+      ID.unique(),
+      `aluno.${name.toLowerCase()}.${Date.now()}@escola.com`, // Email temporário baseado no nome
+      undefined,
+      'senhaTemporaria123',
+      `${name} ${surname}`
+    );
+    const appwriteUserId = newUser.$id;
+
+    try {
+      // Passo 3: Criar o Perfil e o Aluno no nosso banco de dados Neon/Prisma
+      await prisma.profile.create({
+        data: {
+          id: appwriteUserId, // Usamos o mesmo ID do Appwrite
+          role: 'ALUNO',
+        },
+      });
+
+      await prisma.student.create({
+        data: {
+          name,
+          surname,
+          profileId: appwriteUserId, // Conectamos ao perfil criado
+          classId: classId,       // Conecta à Turma
+          parentId: parentId,     // Conecta ao Responsável
+          gradeId: gradeId,       // Conecta ao Ano Escolar
+        },
+      });
+
+      revalidatePath('/dashboard/alunos');
+      return { success: true };
+    } catch (prismaError) {
+      // Se falhar a criação no Prisma, deletar o usuário do Appwrite
+      try {
+        await users.delete(appwriteUserId);
+        console.log(`Usuário ${appwriteUserId} deletado do Appwrite após falha no Prisma`);
+      } catch (deleteError) {
+        console.error('Erro ao deletar usuário do Appwrite após falha:', deleteError);
+      }
+      throw prismaError; // Re-lançar o erro original para ser tratado abaixo
+    }
+  } catch (error: unknown) {
+    console.error('Erro ao criar aluno:', error);
+    if (error instanceof Error) {
+      return { success: false, message: `Erro: ${error.message}` };
+    }
     return { success: false, message: 'Ocorreu um erro ao criar o aluno.' };
   }
 }
