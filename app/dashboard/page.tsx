@@ -9,6 +9,8 @@ import ResponsavelDashboard from '@/components/dashboard/ResponsavelDashboard';
 
 const prisma = new PrismaClient();
 
+export const runtime = 'nodejs';
+
 /**
  * Página principal do dashboard
  * Renderiza o dashboard correto com base no papel do usuário

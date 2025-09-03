@@ -20,10 +20,10 @@ export const getUserProfile = async () => {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            return cookieStore.getAll()
           },
-          setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-            // No Server Components não é possível definir cookies; noop
+          setAll(cookiesToSet) {
+            /* noop no Server Components */
           },
         },
       }

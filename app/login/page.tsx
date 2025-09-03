@@ -38,6 +38,16 @@ export default function LoginPage() {
     if (error) {
       toast.error("Falha no login: " + error.message);
     } else {
+      // Garantir que os tokens sejam salvos como cookies first-party visíveis pelo middleware
+      const { data: { session } } = await supabase.auth.getSession();
+      // Deriva o projectRef a partir da URL pública do Supabase para alinhar o nome dos cookies com o padrão esperado pelo Auth Helpers
+      const projectRefMatch = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^\.]+)\./); 
+      const projectRef = projectRefMatch ? projectRefMatch[1] : '';
+      if (session && projectRef) {
+        // Usar o padrão de cookies que o Supabase SSR espera
+        document.cookie = `sb-${projectRef}-auth-token=${encodeURIComponent(JSON.stringify(session))}; path=/`;
+      }
+
       toast.success("Login realizado com sucesso!");
       router.push('/dashboard'); // Redireciona para o dashboard
       router.refresh(); // Força a atualização do layout do servidor
@@ -58,11 +68,11 @@ export default function LoginPage() {
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="seu@email.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input id="email" type="email" autoComplete="email" placeholder="seu@email.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? 'Entrando...' : 'Entrar'}

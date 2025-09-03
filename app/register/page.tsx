@@ -103,6 +103,7 @@ export default function RegisterPage() {
                 id="username"
                 name="username"
                 type="text"
+                autoComplete="username"
                 value={formData.username}
                 onChange={handleInputChange}
                 placeholder="Digite seu nome de usuário"
@@ -116,6 +117,7 @@ export default function RegisterPage() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Digite seu email"
@@ -144,6 +146,7 @@ export default function RegisterPage() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="Digite sua senha"
@@ -157,6 +160,7 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 placeholder="Confirme sua senha"
