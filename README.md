@@ -29,8 +29,31 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy na Netlify
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Este projeto está configurado para deploy na Netlify. Siga estas etapas para configurar corretamente:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Conecte seu repositório à Netlify
+2. Configure as seguintes variáveis de ambiente no painel da Netlify (Settings > Environment variables):
+
+```
+DATABASE_URL=sua_url_do_banco_de_dados
+NEXT_PUBLIC_APPWRITE_ENDPOINT=seu_endpoint_appwrite
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=seu_project_id_appwrite
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=seu_database_id_appwrite
+NEXT_PUBLIC_APPWRITE_USER_COLLECTION_ID=seu_collection_id_appwrite
+NEXT_PUBLIC_APPWRITE_STORAGE_ID=seu_storage_id_appwrite
+NEXT_PUBLIC_APPWRITE_BUCKET_ID=seu_bucket_id_appwrite
+APPWRITE_API_KEY=sua_api_key_appwrite
+NEXT_PUBLIC_APP_URL=url_da_sua_aplicacao_netlify
+```
+
+3. O arquivo `netlify.toml` já está configurado com as configurações necessárias para o build e deploy.
+
+### Solução de Problemas
+
+Se encontrar erros durante o build relacionados ao Appwrite, verifique:
+
+1. Se todas as variáveis de ambiente estão corretamente configuradas no painel da Netlify
+2. Se as permissões do Appwrite estão configuradas corretamente para permitir acesso da sua aplicação
+3. Se o banco de dados PostgreSQL está acessível a partir da Netlify

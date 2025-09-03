@@ -29,9 +29,13 @@ export async function POST(request: NextRequest) {
 
     // Criar cliente Appwrite
     const client = new Client();
-    client
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+    
+    // Verificar se as variáveis de ambiente estão definidas antes de configurar o cliente
+    if (process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT && process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID) {
+      client
+        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+        .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID);
+    }
     
     const account = new Account(client);
 

@@ -11,10 +11,17 @@ import { APPWRITE_CONFIG } from '@/lib/appwrite';
 import * as z from 'zod';
 
 // Cliente Appwrite para operações no servidor
-const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-  .setKey(process.env.APPWRITE_API_KEY!);
+const client = new Client();
+
+// Verificar se as variáveis de ambiente estão definidas antes de configurar o cliente
+if (process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT && 
+    process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID && 
+    process.env.APPWRITE_API_KEY) {
+  client
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
+}
 
 const users = new Users(client);
 

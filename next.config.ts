@@ -12,13 +12,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Configurações para o Prisma em produção
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma']
-  },
+  serverExternalPackages: ['@prisma/client', 'prisma'],
   // Configuração para o Netlify
   trailingSlash: false,
   // Otimizações para produção
-  swcMinify: true,
+  // swcMinify foi removido no Next.js 15.x
   // Removendo export estático para permitir funcionalidades dinâmicas
   // output: 'export',
   images: {

@@ -8,6 +8,10 @@
   PRISMA_CLI_BINARY_TARGETS = "rhel-openssl-1.0.x"
   # Configurações para Next.js
   NEXT_TELEMETRY_DISABLED = "1"
+  # Certifique-se de que estas variáveis estão definidas no painel da Netlify
+  # NEXT_PUBLIC_APPWRITE_ENDPOINT = "seu-endpoint-appwrite"
+  # NEXT_PUBLIC_APPWRITE_PROJECT_ID = "seu-project-id-appwrite"
+  # APPWRITE_API_KEY = "sua-api-key-appwrite"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

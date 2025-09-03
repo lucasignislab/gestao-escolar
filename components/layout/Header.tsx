@@ -22,10 +22,15 @@ export default async function Header() {
       const session = cookieStore.get('appwrite-session');
       
       if (session) {
-        const client = new Client()
-          .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-          .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-          .setSession(session.value);
+        const client = new Client();
+        
+        // Verificar se as variáveis de ambiente estão definidas antes de configurar o cliente
+        if (process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT && process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID) {
+          client
+            .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+            .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+            .setSession(session.value);
+        }
         
         const account = new Account(client);
         const user = await account.get();
