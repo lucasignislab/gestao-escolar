@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import PageHeader from "@/components/PageHeader";
-import { usePermissions } from '@/hooks/usePermissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,33 +14,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/DataTable";
-import { createColumns } from "./columns";
-import { deleteTurma, buscarTurmas } from "./actions";
+import { columns } from "./columns";
+import { deleteTurmaAction as deleteTurma } from "./actions";
 import TurmaForm from "./TurmaForm";
 import { Class } from "@prisma/client";
 
 // Tipo para turma com relações incluídas
-type TurmaWithRelations = Class & {
-  grade: {
-    id: string;
-    level: number;
-  };
-  supervisor: {
-    id: string;
-    name: string;
-    surname: string;
-  } | null;
-  _count: {
-    students: number;
-  };
-};
+import { TurmaComRelacoes } from './columns';
 
-// Tipo para professor
-type Professor = {
-  id: string;
-  name: string;
-  surname: string;
-};
+
 
 // Tipo para ano escolar
 type AnoEscolar = {
@@ -50,8 +31,15 @@ type AnoEscolar = {
 };
 
 interface TurmasClientProps {
-  initialTurmas: TurmaWithRelations[];
-  professores: Professor[];
+  initialTurmas: TurmaComRelacoes[];
+  professores: {
+    id: string;
+    name: string;
+    surname: string;
+    profileId: string;
+    email: string;
+    phone: string | null;
+  }[];
   anosEscolares: AnoEscolar[];
 }
 
@@ -60,13 +48,11 @@ export default function TurmasClient({
   professores, 
   anosEscolares 
 }: TurmasClientProps) {
-  const [turmas, setTurmas] = useState<TurmaWithRelations[]>(initialTurmas);
+  const [turmas, setTurmas] = useState<TurmaComRelacoes[]>(initialTurmas);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [turmaToEdit, setTurmaToEdit] = useState<TurmaWithRelations | null>(null);
+  const [turmaToEdit, setTurmaToEdit] = useState<TurmaComRelacoes | null>(null);
   const [deletingTurmaId, setDeletingTurmaId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { canDelete, isAdmin, isProfessor, user } = usePermissions();
-
   // Função para adicionar nova turma
   const handleAdd = () => {
     setTurmaToEdit(null);
@@ -74,7 +60,7 @@ export default function TurmasClient({
   };
 
   // Função para editar turma
-  const handleEdit = (turma: TurmaWithRelations) => {
+  const handleEdit = (turma: TurmaComRelacoes) => {
     setTurmaToEdit(turma);
     setIsFormOpen(true);
   };
@@ -89,8 +75,8 @@ export default function TurmasClient({
   const handleFormSuccess = async () => {
     // Recarregar a lista de turmas
     try {
-      const result = await buscarTurmas({});
-      setTurmas(result.turmas as TurmaWithRelations[]);
+      // Por enquanto, vamos apenas recarregar a página
+      window.location.reload();
     } catch (error) {
       console.error('Erro ao recarregar turmas:', error);
     }
@@ -125,15 +111,7 @@ export default function TurmasClient({
 
 
 
-  // Criar colunas da tabela
-  const columns = createColumns({
-    onEdit: handleEdit,
-    onDelete: handleDeleteTurma,
-    canDelete: canDelete('turma'),
-    isAdmin: isAdmin(),
-    isProfessor: isProfessor(),
-    userId: user?.id,
-  });
+
 
   return (
     <div className="space-y-6">
@@ -150,7 +128,7 @@ export default function TurmasClient({
 
       {/* Tabela de turmas */}
       <DataTable
-        columns={columns}
+        columns={columns(handleEdit, (turma) => handleDeleteTurma(turma.id))}
         data={turmas}
       />
 
@@ -184,9 +162,14 @@ export default function TurmasClient({
 
       <TurmaForm
         isOpen={isFormOpen}
-        onClose={handleFormClose}
-        onSuccess={handleFormSuccess}
-        turma={turmaToEdit || undefined}
+        onOpenChange={(isOpen) => {
+          setIsFormOpen(isOpen);
+          if (!isOpen) {
+            handleFormClose();
+            handleFormSuccess();
+          }
+        }}
+        turma={turmaToEdit}
         professores={professores}
         anosEscolares={anosEscolares}
       />
