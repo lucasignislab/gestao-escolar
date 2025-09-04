@@ -1,20 +1,49 @@
 // app/dashboard/page.tsx 
 import { getUserProfile } from '@/lib/auth'; 
-import AdminDashboard from '@/components/dashboards/AdminDashboard'; 
-// Futuramente, importaremos os outros dashboards aqui 
-// import ProfessorDashboard from '@/components/dashboard/ProfessorDashboard'; 
-// import AlunoDashboard from '@/components/dashboard/AlunoDashboard';
+import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import ProfessorDashboard from '@/components/dashboards/ProfessorDashboard';
+import AlunoDashboard from '@/components/dashboards/AlunoDashboard';
+import { prisma } from '@/lib/prisma';
 
-// Adicionar suporte para requisições POST
+// Função para buscar aulas do professor
+async function getProfessorAulas(profileId: string) {
+  return prisma.lesson.findMany({
+    where: {
+      teacher: {
+        profileId,
+      },
+    },
+    include: {
+      subject: true,
+      class: true,
+    },
+  });
+}
+
+// Função para buscar aulas do aluno
+async function getAlunoAulas(profileId: string) {
+  const aluno = await prisma.student.findFirst({
+    where: { profileId },
+  });
+
+  if (!aluno) {
+    return null;
+  }
+
+  return prisma.lesson.findMany({
+    where: {
+      classId: aluno.classId,
+    },
+    include: {
+      subject: true,
+      class: true,
+    },
+  });
+}
+
+// Adicionar suporte para renderização dinâmica
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
-
-// Função para lidar com requisições POST
-export async function POST() {
-  // Apenas retorna a mesma página que GET
-  const profile = await getUserProfile();
-  return Response.json({ success: true, role: profile?.role });
-} 
 
 export default async function DashboardPage() { 
   const profile = await getUserProfile(); 
@@ -28,12 +57,19 @@ export default async function DashboardPage() {
   switch (profile.role) { 
     case 'ADMIN': 
       return <AdminDashboard />; 
-    case 'PROFESSOR': 
-      // return <ProfessorDashboard profile={profile} />; 
-      return <div>Dashboard do Professor em construção...</div>; 
-    case 'ALUNO': 
-      // return <AlunoDashboard profile={profile} />; 
-      return <div>Dashboard do Aluno em construção...</div>; 
+    case 'PROFESSOR': {
+      const professorAulas = await getProfessorAulas(profile.id);
+      return <ProfessorDashboard profile={profile} aulas={professorAulas} />; 
+    }
+    case 'ALUNO': {
+      const alunoAulas = await getAlunoAulas(profile.id);
+      
+      if (!alunoAulas) {
+        return <div>Não foi possível encontrar os dados do aluno.</div>;
+      }
+      
+      return <AlunoDashboard profile={profile} aulas={alunoAulas} />; 
+    }
     case 'RESPONSAVEL': 
       // return <ResponsavelDashboard profile={profile} />; 
       return <div>Dashboard do Responsável em construção...</div>; 

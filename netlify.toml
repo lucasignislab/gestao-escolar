@@ -1,11 +1,12 @@
 [build]
-  command = "npm run build:netlify"
+  command = "npm run build"
   publish = ".next"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ./prisma/"
 
 [build.environment]
   NODE_VERSION = "20"
   # Configurações para o Prisma
-  PRISMA_CLI_BINARY_TARGETS = "rhel-openssl-1.0.x"
+  PRISMA_CLI_BINARY_TARGETS = ["native", "rhel-openssl-1.0.x"]
   # Configurações para Next.js
   NEXT_TELEMETRY_DISABLED = "1"
   # Certifique-se de que estas variáveis estão definidas no painel da Netlify

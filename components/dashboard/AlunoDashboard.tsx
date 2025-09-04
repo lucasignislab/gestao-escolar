@@ -1,5 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar, Award, ClipboardList, BookOpen } from 'lucide-react';
+import WeeklySchedule from '../schedule/WeeklySchedule';
+import { convertLessonsToEvents } from '@/lib/schedule-utils';
 
 interface AlunoDashboardProps {
   profile: {
@@ -8,9 +10,26 @@ interface AlunoDashboardProps {
     email?: string;
     role: string;
   };
+  aulas?: {
+    id: string;
+    dayOfWeek: number;
+    startTime: Date;
+    endTime: Date;
+    classId: string;
+    subjectId: string;
+    teacherId: string;
+    subject: {
+      id: string;
+      name: string;
+    };
+    class: {
+      id: string;
+      name: string;
+    };
+  }[];
 }
 
-export default function AlunoDashboard({ profile }: AlunoDashboardProps) {
+export default function AlunoDashboard({ profile, aulas = [] }: AlunoDashboardProps) {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -64,28 +83,24 @@ export default function AlunoDashboard({ profile }: AlunoDashboardProps) {
         </Card>
       </div>
 
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle>Grade Horária Semanal</CardTitle>
+          <CardDescription>
+            Visualize suas aulas da semana
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WeeklySchedule 
+            events={aulas ? convertLessonsToEvents(aulas) : []}
+            onEventClick={(event) => {
+              console.log('Aula selecionada:', event);
+            }}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Agenda da Semana</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 bg-muted rounded">
-                <span className="font-medium">Segunda - 08:00</span>
-                <span className="text-sm text-muted-foreground">Matemática</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-muted rounded">
-                <span className="font-medium">Segunda - 09:00</span>
-                <span className="text-sm text-muted-foreground">Português</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-muted rounded">
-                <span className="font-medium">Terça - 08:00</span>
-                <span className="text-sm text-muted-foreground">História</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardHeader>

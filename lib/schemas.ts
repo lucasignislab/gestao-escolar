@@ -5,12 +5,23 @@ import { z } from 'zod';
  * Esquema de validação para a entidade Professor
  * Utiliza Zod para validação de tipos e regras de negócio
  */
+// Schema para o Profile (dados comuns a todos os tipos de usuário)
+export const profileSchema = z.object({
+  id: z.string(),
+  username: z.string().nullable(),
+  role: z.enum(['ADMIN', 'PROFESSOR', 'ALUNO', 'RESPONSAVEL']),
+  avatarUrl: z.string().nullable(),
+});
+
+export type ProfileFormData = z.infer<typeof profileSchema>;
+
 export const professorSchema = z.object({
   id: z.string().optional(), // Opcional, usado apenas para edição
   name: z.string().min(3, { message: 'O nome deve ter no mínimo 3 caracteres.' }),
   surname: z.string().min(3, { message: 'O sobrenome deve ter no mínimo 3 caracteres.' }),
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
   phone: z.string().optional(), // Campo opcional para telefone
+  avatarUrl: z.string().optional(), // URL da imagem do avatar
 });
 
 /**

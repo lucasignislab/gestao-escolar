@@ -3,7 +3,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, BookOpen, Users } from 'lucide-react';
-import AgendaComponent from './AgendaComponent';
+import WeeklySchedule from '../schedule/WeeklySchedule';
+import { convertLessonsToEvents } from '@/lib/schedule-utils';
 
 /**
  * Interface para as aulas do professor
@@ -13,6 +14,9 @@ interface Lesson {
   dayOfWeek: number;
   startTime: Date;
   endTime: Date;
+  classId: string;
+  subjectId: string;
+  teacherId: string;
   subject: {
     id: string;
     name: string;
@@ -122,7 +126,23 @@ export default function ProfessorDashboard({ aulas }: ProfessorDashboardProps) {
       </div>
 
       {/* Calendário de aulas */}
-      <AgendaComponent lessons={aulas} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Grade Horária Semanal</CardTitle>
+          <CardDescription>
+            Visualize suas aulas da semana
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WeeklySchedule 
+            events={convertLessonsToEvents(aulas)} 
+            onEventClick={(event) => {
+              // Você pode adicionar uma ação ao clicar em uma aula
+              console.log('Aula selecionada:', event);
+            }}
+          />
+        </CardContent>
+      </Card>
 
       {/* Lista de aulas */}
       <Card>

@@ -94,7 +94,7 @@ export async function updateProfessorAction(data: unknown) {
     };
   }
 
-  const { id, ...dataToUpdate } = result.data;
+  const { id, avatarUrl, ...teacherDataToUpdate } = result.data;
   if (!id) return { success: false, message: "ID do professor é obrigatório para atualização." };
 
   try {
@@ -107,9 +107,6 @@ export async function updateProfessorAction(data: unknown) {
     if (!professor) {
       return { success: false, message: "Professor não encontrado." };
     }
-
-    // Extrair avatarUrl se estiver presente nos dados (foi adicionado via casting para any no frontend)
-    const { avatarUrl, ...teacherDataToUpdate } = dataToUpdate as any;
 
     // Iniciar uma transação para garantir que ambas as atualizações ocorram ou nenhuma
     await prisma.$transaction(async (tx) => {
@@ -170,7 +167,7 @@ export async function createProfessorAction(data: unknown) {
   if (!result.success) {
     return { success: false, errors: result.error.flatten().fieldErrors };
   }
-  const { name, surname, email } = result.data;
+  const { name, surname, email, avatarUrl } = result.data;
 
   try {
     // Verificar se já existe um usuário com este e-mail no Appwrite
@@ -200,6 +197,7 @@ export async function createProfessorAction(data: unknown) {
         data: {
           id: appwriteUserId, // Usamos o mesmo ID do Appwrite
           role: 'PROFESSOR',
+          avatarUrl: avatarUrl, // Salvamos o avatarUrl no perfil
         },
       });
 

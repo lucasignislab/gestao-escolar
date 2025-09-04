@@ -9,10 +9,11 @@ import { Teacher } from '@prisma/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { professorSchema, ProfessorFormData } from '@/lib/schemas';
-import { createProfessor, updateProfessor, createProfessorAction, updateProfessorAction } from './actions';
+import { createProfessorAction, updateProfessorAction } from './actions';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { client, storage } from '@/lib/appwrite';
+import ImageUploader from '@/components/upload/ImageUploader';
+import Image from 'next/image';
 
 /**
  * Interface para as propriedades do componente ProfessorForm
@@ -20,7 +21,7 @@ import { client, storage } from '@/lib/appwrite';
 interface ProfessorFormProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  teacher: Teacher | null;
+  teacher: (Teacher & { profile?: { avatarUrl?: string | null } }) | null;
 }
 
 /**
@@ -31,58 +32,24 @@ interface ProfessorFormProps {
  */
 export default function ProfessorForm({ isOpen, onOpenChange, teacher }: ProfessorFormProps) {
   const formTitle = teacher ? 'Editar Professor' : 'Adicionar Novo Professor';
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
-  const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, reset, setError } = useForm<ProfessorFormData>({
+  const { register, handleSubmit, setValue, getValues, setError, formState: { errors }, reset } = useForm<ProfessorFormData>({
     resolver: zodResolver(professorSchema),
     defaultValues: teacher ? {
       name: teacher.name,
       surname: teacher.surname,
       email: teacher.email,
       phone: teacher.phone || '',
+      avatarUrl: '',
     } : {
       name: '',
       surname: '',
       email: '',
       phone: '',
+      avatarUrl: '',
     },
   });
-
-  /**
-   * Função para fazer upload da imagem do avatar
-   * @param file - Arquivo de imagem selecionado
-   */
-  const handleFileUpload = async (file: File) => {
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const fileName = `${Date.now()}_${file.name}`;
-      
-      // Upload para o Appwrite Storage
-      const response = await storage.createFile(
-        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
-        fileName,
-        file
-      );
-
-      // Obter a URL pública do arquivo
-      const fileUrl = storage.getFileView(
-        process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
-        response.$id
-      );
-
-      setAvatarUrl(fileUrl.toString());
-      toast.success('Imagem carregada com sucesso!');
-    } catch (error) {
-      console.error('Erro no upload:', error);
-      toast.error('Erro no upload da imagem.');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   /**
    * Função para lidar com o envio do formulário
@@ -100,10 +67,10 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
         };
         
         // Adicionar URL do avatar se foi feito upload
+        const avatarUrl = getValues('avatarUrl');
         if (avatarUrl) {
-          // Nota: avatarUrl será tratado separadamente no backend
-          // pois está na tabela Profile, não diretamente em Teacher
-          (updateData as any).avatarUrl = avatarUrl;
+          // O ID do arquivo do Appwrite será atualizado no perfil
+          updateData.avatarUrl = avatarUrl;
         }
 
         const result = await updateProfessorAction(updateData);
@@ -187,33 +154,26 @@ export default function ProfessorForm({ isOpen, onOpenChange, teacher }: Profess
             <Input id="phone" type="tel" {...register('phone')} />
             {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="avatar">Foto do Professor</Label>
-            <Input 
-              id="avatar" 
-              type="file" 
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  handleFileUpload(file);
-                }
-              }}
-              disabled={uploading}
-            />
-            {uploading && <p className="text-sm text-blue-500">Fazendo upload...</p>}
-            {avatarUrl && (
-              <div className="mt-2">
-                <img 
-                  src={avatarUrl} 
-                  alt="Preview" 
-                  className="w-20 h-20 rounded-full object-cover border"
-                />
-                <p className="text-sm text-green-500 mt-1">Imagem carregada com sucesso!</p>
-              </div>
-            )}
-          </div>
-          <Button type="submit" className="w-full" disabled={uploading || isSubmitting}>
+          {/* Campo de upload de imagem */}
+          <ImageUploader
+            onUploadSuccess={(url) => {
+              setValue('avatarUrl', url);
+            }}
+            label="Foto do Professor"
+          />
+          {teacher?.profile?.avatarUrl && (
+            <div className="mt-2">
+              <Image 
+                src={teacher.profile.avatarUrl} 
+                alt={`${teacher.name} ${teacher.surname}`}
+                width={80}
+                height={80}
+                className="object-cover rounded-full"
+              />
+            </div>
+          )}
+          <input type="hidden" {...register('avatarUrl')} />
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting 
               ? 'Salvando...' 
               : teacher ? 'Salvar Alterações' : 'Criar Professor'}

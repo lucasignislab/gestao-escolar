@@ -3,6 +3,8 @@ import LogoutButton from '@/components/auth/LogoutButton';
 import { getUserProfile } from '@/lib/auth';
 import { Client, Account } from 'appwrite';
 import { cookies } from 'next/headers';
+import { getAvatarUrl } from '@/lib/appwrite';
+import Image from 'next/image';
 
 /**
  * Componente de cabeçalho do dashboard
@@ -45,6 +47,16 @@ export default async function Header() {
     <header className="bg-white shadow p-4 flex justify-between items-center">
       <div /> {/* Espaço à esquerda */}
       <div className="flex items-center gap-4">
+        {profile?.avatarUrl && (
+          <div className="relative w-8 h-8 rounded-full overflow-hidden">
+            <Image
+              src={getAvatarUrl(profile.avatarUrl)}
+              alt="Avatar do usuário"
+              fill
+              className="object-cover"
+            />
+          </div>
+        )}
         <span>{userEmail ? `Olá, ${userEmail}` : ''}</span>
         <LogoutButton />
       </div>

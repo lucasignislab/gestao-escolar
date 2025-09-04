@@ -2,17 +2,28 @@
 'use client';
 
 import { ColumnDef, Row } from '@tanstack/react-table';
-import { Teacher } from '@prisma/client'; // Importe o tipo gerado pelo Prisma
+import { Teacher as PrismaTeacher } from '@prisma/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Edit } from 'lucide-react';
+import { getAvatarUrl } from '@/lib/appwrite';
+import Image from 'next/image';
+
+/**
+ * Interface extendida para incluir o perfil
+ */
+interface TeacherWithProfile extends PrismaTeacher {
+  profile?: {
+    avatarUrl?: string | null;
+  };
+}
 
 /**
  * Interface para as props das colunas
  */
 interface ColumnsProps {
-  onEdit: (teacher: Teacher) => void;
-  onDelete: (teacher: Teacher) => void;
+  onEdit: (teacher: TeacherWithProfile) => void;
+  onDelete: (teacher: TeacherWithProfile) => void;
   canEdit: boolean;
   canDelete: boolean;
   isAdmin: boolean;
@@ -25,11 +36,32 @@ interface ColumnsProps {
  * @param onDelete - Função para excluir um professor
  */
 // Definição básica das colunas sem ações
-const baseColumns: ColumnDef<Teacher>[] = [
+const baseColumns: ColumnDef<TeacherWithProfile>[] = [
   {
     accessorKey: 'name',
     header: 'Nome',
-    cell: ({ row }) => `${row.original.name} ${row.original.surname}`,
+    cell: ({ row }) => {
+      const avatarUrl = row.original.profile?.avatarUrl;
+      return (
+        <div className="flex items-center gap-3">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+            {avatarUrl ? (
+              <Image
+                src={getAvatarUrl(avatarUrl)}
+                alt={`Avatar de ${row.original.name}`}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                {row.original.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <span>{`${row.original.name} ${row.original.surname}`}</span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'email',
@@ -42,12 +74,12 @@ const baseColumns: ColumnDef<Teacher>[] = [
 ];
 
 // Exportação para o novo código com função de edição
-export const columns = (onEdit: (teacher: Teacher) => void) => {
+export const columns = (onEdit: (teacher: TeacherWithProfile) => void) => {
   return [
     ...baseColumns,
     {
       id: 'actions',
-      cell: ({ row }: { row: Row<Teacher> }) => {
+      cell: ({ row }: { row: Row<TeacherWithProfile> }) => {
         const professor = row.original;
         
         return (
@@ -62,7 +94,7 @@ export const columns = (onEdit: (teacher: Teacher) => void) => {
 };
 
 // Exportação para compatibilidade com o código antigo (com ações)
-export const createColumns = ({ onEdit, onDelete, canEdit, canDelete, isAdmin }: ColumnsProps): ColumnDef<Teacher>[] => [
+export const createColumns = ({ onEdit, onDelete, canEdit, canDelete, isAdmin }: ColumnsProps): ColumnDef<TeacherWithProfile>[] => [
   {
     accessorKey: 'name',
     header: 'Nome',
