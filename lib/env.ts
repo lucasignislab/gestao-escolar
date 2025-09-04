@@ -12,13 +12,13 @@ const envSchema = z.object({
   NEXT_PUBLIC_APPWRITE_ENDPOINT: z.string().url(),
   NEXT_PUBLIC_APPWRITE_PROJECT_ID: z.string().min(1),
   APPWRITE_API_KEY: z.string().min(1),
-  NEXT_PUBLIC_APPWRITE_BUCKET_ID: z.string().min(1),
+  NEXT_PUBLIC_APPWRITE_BUCKET_ID: z.string().min(1).optional(),
   NEXT_PUBLIC_APPWRITE_DATABASE_ID: z.string().optional(),
   NEXT_PUBLIC_APPWRITE_USER_COLLECTION_ID: z.string().optional(),
   NEXT_PUBLIC_APPWRITE_STORAGE_ID: z.string().optional(),
 
   // Variáveis da Aplicação
-  NEXT_PUBLIC_APP_URL: z.string().url(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Variáveis de Email (opcionais)
