@@ -24,50 +24,39 @@ export default function LoginPage() {
 
   /**
    * Manipula o processo de login do usuário
-   * Autentica com Appwrite e redireciona em caso de sucesso
+   * Autentica através da API do servidor
    */
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
 
     try {
-      // Limpar qualquer sessão existente
-      try {
-        await account.deleteSession('current');
-        document.cookie = 'appwrite-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      } catch (sessionError) {
-        console.log('Nenhuma sessão ativa para encerrar ou erro ao encerrar:', sessionError);
+      console.log('🔍 [Login] Enviando requisição para API de login');
+      
+      // Fazer login através da API do servidor
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro no login');
       }
 
-      // Criar nova sessão
-      const session = await account.createEmailPasswordSession(email, password);
-      console.log('Sessão criada com sucesso:', session.$id);
-      
-      // Definir o cookie manualmente com o valor da sessão
-      // Usar o nome exato que o middleware está procurando
-      const cookieValue = session.secret;
-      document.cookie = `appwrite-session=${cookieValue}; path=/; max-age=2592000; domain=${window.location.hostname}`;
-      
-      // Verificar se o cookie foi definido
-      console.log('Cookie após definição manual:', document.cookie);
-      console.log('Todos os cookies após login:', document.cookie.split('; ').join('\n'));
-      
+      console.log('✅ [Login] Login realizado com sucesso via API');
       toast.success("Login realizado com sucesso!");
       
-      // Criar um formulário para fazer um POST para o dashboard
-      // Isso força um redirecionamento completo com os cookies
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/dashboard';
-      document.body.appendChild(form);
-      form.submit();
+      // Redirecionar para o dashboard
+      // O cookie já foi definido pelo servidor
+      window.location.href = '/dashboard';
       
-      // Fallback caso o formulário não seja submetido
-      setTimeout(() => {
-        console.log('Usando fallback para redirecionamento');
-        window.location.href = '/dashboard';
-      }, 1000);
     } catch (error: any) {
+      console.error('❌ [Login] Erro:', error);
       toast.error("Falha no login: " + (error.message || 'Erro desconhecido'));
     }
     

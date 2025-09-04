@@ -8,7 +8,15 @@ import { Home, Users, GraduationCap, UserCheck, School, BookOpen, Shield, FileTe
  * @returns JSX da barra lateral com links específicos para cada tipo de usuário
  */
 export default async function Sidebar() {
-  const profile = await getUserProfile();
+  let profile = null;
+  
+  try {
+    profile = await getUserProfile();
+  } catch (error) {
+    console.log('Sidebar: Erro ao obter perfil, usuário não autenticado');
+    // Se não conseguir obter o perfil, o usuário não está autenticado
+    // O middleware deve redirecionar, mas vamos retornar um sidebar básico
+  }
 
   // Links para diferentes roles
   const adminLinks = [

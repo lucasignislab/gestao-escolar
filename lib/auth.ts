@@ -1,54 +1,70 @@
 // lib/auth.ts
-import { Client, Account } from 'appwrite';
+import { Client, Account } from 'node-appwrite';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 
 const prisma = new PrismaClient();
 
+// Nome do cookie de sessão
+const SESSION_COOKIE = 'appwrite-session';
+
 /**
- * Cria um cliente Appwrite para uso no servidor
+ * Cria um cliente Appwrite para operações administrativas (usando API key)
  */
-const createServerAppwriteClient = async () => {
-  const client = new Client();
-  
-  // Verificar se as variáveis de ambiente estão definidas antes de configurar o cliente
-  if (process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT && process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID) {
-    client
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID);
-  }
+export async function createAdminClient() {
+  const client = new Client()
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+    .setKey(process.env.APPWRITE_API_KEY!);
 
-  // Obter o cookie de sessão do servidor
+  return {
+    get account() {
+      return new Account(client);
+    },
+  };
+}
+
+/**
+ * Cria um cliente Appwrite para operações de usuário autenticado (usando sessão)
+ */
+export async function createSessionClient() {
+  const client = new Client()
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
   const cookieStore = await cookies();
+  const session = cookieStore.get(SESSION_COOKIE);
   
-  // Tentar obter o cookie de várias maneiras
-  let sessionCookie = cookieStore.get('appwrite-session');
-  
-  // Verificar se o cookie existe
-  if (sessionCookie?.value) {
-    console.log('✅ [createServerAppwriteClient] Cookie de sessão encontrado no servidor');
-    console.log('✅ [createServerAppwriteClient] Valor do cookie (primeiros 10 caracteres):', sessionCookie.value.substring(0, 10) + '...');
-    
-    try {
-      // Tentar decodificar o valor do cookie
-      const decodedValue = decodeURIComponent(sessionCookie.value);
-      console.log('✅ [createServerAppwriteClient] Cookie de sessão decodificado com sucesso');
-      client.setSession(decodedValue);
-    } catch (e) {
-      console.error('❌ [createServerAppwriteClient] Erro ao decodificar o cookie de sessão:', e);
-      // Tentar usar o valor bruto se a decodificação falhar
-      console.log('✅ [createServerAppwriteClient] Usando valor bruto do cookie');
-      client.setSession(sessionCookie.value);
-    }
-  } else {
-    console.log('❌ [createServerAppwriteClient] Cookie de sessão não encontrado no servidor');
-    // Listar todos os cookies disponíveis para depuração
-    const allCookies = cookieStore.getAll();
-    console.log('✅ [createServerAppwriteClient] Todos os cookies disponíveis:', allCookies.map(c => c.name).join(', '));
+  console.log('🔍 [createSessionClient] Todos os cookies:', cookieStore.getAll().map(c => `${c.name}=${c.value.substring(0, 20)}...`));
+  console.log('🔍 [createSessionClient] Cookie de sessão:', session ? `${session.value.substring(0, 20)}...` : 'não encontrado');
+
+  if (!session || !session.value) {
+    console.log('❌ [createSessionClient] Nenhuma sessão encontrada');
+    throw new Error('No session');
   }
 
-  return new Account(client);
-};
+  // Decodificar o cookie se estiver URL-encoded
+  let sessionValue = session.value;
+  try {
+    // Tentar decodificar se estiver URL-encoded
+    const decoded = decodeURIComponent(sessionValue);
+    if (decoded !== sessionValue) {
+      console.log('🔍 [createSessionClient] Cookie decodificado de URL encoding');
+      sessionValue = decoded;
+    }
+  } catch (e) {
+    console.log('🔍 [createSessionClient] Cookie não está URL-encoded');
+  }
+
+  console.log('✅ [createSessionClient] Definindo sessão:', sessionValue.substring(0, 10) + '...');
+  client.setSession(sessionValue);
+
+  return {
+    get account() {
+      return new Account(client);
+    },
+  };
+}
 
 /**
  * Busca o perfil do usuário autenticado
@@ -58,7 +74,9 @@ const createServerAppwriteClient = async () => {
  */
 export const getUserProfile = async () => {
   try {
-    const account = await createServerAppwriteClient();
+    console.log('🔍 [getUserProfile] Iniciando busca do perfil do usuário');
+    const { account } = await createSessionClient();
+    console.log('🔍 [getUserProfile] Cliente Appwrite criado, tentando obter usuário');
     
     const user = await account.get();
     

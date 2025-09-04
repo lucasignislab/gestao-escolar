@@ -2,7 +2,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/appwrite';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -12,21 +11,27 @@ import { toast } from 'sonner';
  */
 export default function LogoutButton() {
   const router = useRouter();
-  const { account } = createClient();
 
   /**
    * Manipula o processo de logout do usuário
-   * Encerra a sessão no Appwrite e redireciona para login
+   * Chama a API route de logout e redireciona para login
    */
   const handleLogout = async () => {
     try {
-      await account.deleteSession('current');
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
-      // Remover cookie de sessão
-      document.cookie = 'appwrite-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      
-      router.push('/login');
-      router.refresh();
+      if (response.ok) {
+        router.push('/login');
+        router.refresh();
+      } else {
+        const data = await response.json();
+        toast.error("Erro ao sair: " + (data.message || 'Erro desconhecido'));
+      }
     } catch (error: any) {
       toast.error("Erro ao sair: " + (error.message || 'Erro desconhecido'));
     }

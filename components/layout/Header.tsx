@@ -12,7 +12,14 @@ import Image from 'next/image';
  * Utiliza Server Component para buscar dados do usuário
  */
 export default async function Header() {
-  const profile = await getUserProfile();
+  let profile = null;
+  
+  try {
+    profile = await getUserProfile();
+  } catch (error) {
+    console.log('Header: Erro ao obter perfil, usuário não autenticado');
+    // Se não conseguir obter o perfil, o usuário não está autenticado
+  }
   
   // Se não há perfil, tentar obter dados do usuário diretamente do Appwrite
    let userEmail = '';
